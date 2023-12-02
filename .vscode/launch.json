@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Current File",
+            "type": "go",
+            "request": "launch",
+            "program": "${file}", // This runs the currently open file
+            "cwd": "${fileDirname}/..", // This sets the working directory to one level up
+            "args": [] // Any command line arguments you want to pass
+        }
+    ]
+}
