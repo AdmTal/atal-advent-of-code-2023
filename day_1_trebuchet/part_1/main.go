@@ -10,8 +10,8 @@ import (
 )
 
 func main() {
-	// content, err := os.ReadFile("inputs/example_input.txt")
-	content, err := os.ReadFile("inputs/input.txt")
+	// content, err := os.ReadFile("example_input.txt")
+	content, err := os.ReadFile("input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
