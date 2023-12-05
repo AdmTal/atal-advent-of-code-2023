@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -29,13 +30,26 @@ type Categories struct {
 	humidityToLocation  Category
 }
 
-// func (c *Category) getDestinationForSource(sourceId int) int {
-// 	// todo
-// }
+func (c *Category) getDestinationForSource(sourceId int) int {
+	for _, categoryMapping := range c.categoryMappings {
+		min := categoryMapping.source
+		max := categoryMapping.source + categoryMapping.length
+		if sourceId >= min && sourceId <= max {
+			return categoryMapping.destination + sourceId - min
+		}
+	}
+	return sourceId
+}
 
-// func (c *Categories) getLocationForSeed(seedId int) int {
-// 	// todo
-// }
+func (c *Categories) getLocationForSeed(seedId int) int {
+	soilId := c.seedToSoil.getDestinationForSource(seedId)
+	fertilizerId := c.soilToFertilizer.getDestinationForSource(soilId)
+	waterId := c.fertilizerToWater.getDestinationForSource(fertilizerId)
+	lightId := c.waterToLight.getDestinationForSource(waterId)
+	tempId := c.lightToTemperature.getDestinationForSource(lightId)
+	humidId := c.tempatureToHumidity.getDestinationForSource(tempId)
+	return c.humidityToLocation.getDestinationForSource(humidId)
+}
 
 func getCategoryForLines(lines []string) Category {
 	// Pop Header
@@ -47,12 +61,12 @@ func getCategoryForLines(lines []string) Category {
 		}
 		map_values := strings.Fields(line)
 
-		source, err := strconv.Atoi(map_values[0])
+		destination, err := strconv.Atoi(map_values[0])
 		if err != nil {
 			panic(err)
 		}
 
-		destination, err := strconv.Atoi(map_values[1])
+		source, err := strconv.Atoi(map_values[1])
 		if err != nil {
 			panic(err)
 		}
@@ -88,46 +102,52 @@ func parseInput(fileContents string) ([]int, Categories, error) {
 	}
 
 	// Pop empty line
-	_, lines = lines[0], lines[1:]
+	_, lines = lines[0], lines[2:]
 
 	seedsToSoilMappingStrings := []string{}
-	for _, line := range lines {
+	for idx, line := range lines {
 		if line == "" {
+			lines = lines[idx+1:]
 			break
 		}
 		seedsToSoilMappingStrings = append(seedsToSoilMappingStrings, line)
 	}
 	soilToFertilizerMappingStrings := []string{}
-	for _, line := range lines {
+	for idx, line := range lines {
 		if line == "" {
+			lines = lines[idx+1:]
 			break
 		}
 		soilToFertilizerMappingStrings = append(soilToFertilizerMappingStrings, line)
 	}
 	fertilizerToWaterMappingStrings := []string{}
-	for _, line := range lines {
+	for idx, line := range lines {
 		if line == "" {
+			lines = lines[idx+1:]
 			break
 		}
 		fertilizerToWaterMappingStrings = append(fertilizerToWaterMappingStrings, line)
 	}
 	waterToLightMappingStrings := []string{}
-	for _, line := range lines {
+	for idx, line := range lines {
 		if line == "" {
+			lines = lines[idx+1:]
 			break
 		}
 		waterToLightMappingStrings = append(waterToLightMappingStrings, line)
 	}
 	lightToTemperatureMappingStrings := []string{}
-	for _, line := range lines {
+	for idx, line := range lines {
 		if line == "" {
+			lines = lines[idx+1:]
 			break
 		}
 		lightToTemperatureMappingStrings = append(lightToTemperatureMappingStrings, line)
 	}
 	temperatureToHumidityMappingStrings := []string{}
-	for _, line := range lines {
+	for idx, line := range lines {
 		if line == "" {
+			lines = lines[idx+1:]
 			break
 		}
 		temperatureToHumidityMappingStrings = append(temperatureToHumidityMappingStrings, line)
@@ -163,16 +183,27 @@ func main() {
 	exeDir := filepath.Dir(exePath)
 
 	// Load the input file from the same dir
-	filePath := filepath.Join(exeDir, "example_input.txt")
-	// filePath := filepath.Join(exeDir, "input.txt")
+	// filePath := filepath.Join(exeDir, "example_input.txt")
+	filePath := filepath.Join(exeDir, "input.txt")
 
 	// Read the file
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	seeds, categories, err := parseInput(string(content))
+	if err != nil {
+		panic(err)
+	}
 
-	fmt.Println(seeds, categories)
+	min_location := math.MaxInt
+	for _, seed := range seeds {
+		location := categories.getLocationForSeed(seed)
+		if location < min_location {
+			min_location = location
+		}
+	}
 
+	fmt.Println(min_location)
 }
