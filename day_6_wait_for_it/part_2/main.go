@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -16,51 +15,16 @@ type RaceData struct {
 	bestDistance int
 }
 
-func (rd *RaceData) getLowestNumberThatBeatsBestTime(time int) (int, error) {
-	timeRange := 2
-	for i := time - timeRange; i <= time+timeRange; i++ {
-		result := rd.getDistance(i)
-		if result > rd.bestDistance {
-			return i, nil
-		}
-	}
-	return 0, errors.New("could not find lowest number")
-}
-
-func (rd *RaceData) getHighestNumberThatBeatsBestTime(time int) (int, error) {
-	timeRange := 2
-	for i := time + timeRange; i > time-timeRange; i-- {
-		result := rd.getDistance(i)
-		if result > rd.bestDistance {
-			return i, nil
-		}
-	}
-	return 0, errors.New("could not find highest number")
-}
-
-func (rd *RaceData) getDistance(chargeTime int) int {
-	return chargeTime * (rd.racetime - chargeTime)
-}
-
 func (rd *RaceData) getNumWaysToWin() int {
 	// Quadratic formula
 	a := -float64(1)
 	b := float64(rd.racetime)
 	c := -float64(rd.bestDistance)
 
-	xMin := int(math.Floor((-b + math.Sqrt((math.Pow(b, float64(2)))-(4*a*c))) / (2 * a)))
-	xMax := int(math.Ceil((-b - math.Sqrt((math.Pow(b, float64(2)))-(4*a*c))) / (2 * a)))
+	xMin := int(math.Floor((-b+math.Sqrt((math.Pow(b, float64(2)))-(4*a*c)))/(2*a))) + 1
+	xMax := int(math.Ceil((-b-math.Sqrt((math.Pow(b, float64(2)))-(4*a*c)))/(2*a))) - 1
 
-	x0, err := rd.getLowestNumberThatBeatsBestTime(xMin)
-	if err != nil {
-		panic(err)
-	}
-	x1, err := rd.getHighestNumberThatBeatsBestTime(xMax)
-	if err != nil {
-		panic(err)
-	}
-
-	return (x1 - x0 + 1)
+	return (xMax - xMin + 1)
 }
 
 func parseInput(fileContents string) ([]RaceData, error) {
