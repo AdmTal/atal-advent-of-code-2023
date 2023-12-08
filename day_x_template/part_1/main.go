@@ -26,8 +26,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	file_contents := string(content)
-	lines := strings.Split(file_contents, "\n")
+	fileContents := string(content)
+	lines := strings.Split(fileContents, "\n")
 
 	for _, line := range lines {
 		fmt.Println(line)
