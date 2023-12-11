@@ -18,6 +18,7 @@ type Node struct {
 	posX    int
 	posY    int
 	char    string
+	counted bool
 }
 
 func parseInput(fileContents string) (int, int, [][]Node) {
@@ -87,6 +88,74 @@ func parseInput(fileContents string) (int, int, [][]Node) {
 	return SposX, SposY, graph
 }
 
+var cache = make(map[int]map[int]bool)
+
+func tileIsEnclosed(graph *[][]Node, row int, col int, visited map[int]map[int]bool) bool {
+	if row == 4 && col == 3 {
+		fmt.Println("f")
+	}
+	// Check Cache
+	_, ok := cache[row]
+	if ok {
+		_, ok := cache[row][col]
+		if ok {
+			return cache[row][col]
+		}
+	}
+	_, ok = cache[row]
+	if !ok {
+		cache[row] = map[int]bool{}
+	}
+
+	_, ok = visited[row]
+	if ok {
+		_, ok := visited[row][col]
+		if ok {
+			return visited[row][col]
+		}
+	}
+	_, ok = visited[row]
+	if !ok {
+		visited[row] = map[int]bool{}
+	}
+
+	visited[row][col] = true
+
+	theGraph := *graph
+	numRows := len(theGraph)
+	numCols := len(theGraph[0])
+
+	// Touch the edge, not enclosed
+	if col <= 0 || col >= numCols || row <= 0 || row >= numRows {
+		cache[row][col] = false
+		return cache[row][col]
+	}
+
+	// Parts are by definition not enclosed
+	if theGraph[row][col].char != "." {
+		cache[row][col] = false
+		return cache[row][col]
+	}
+
+	// Tile is enclosed if all of the "." around it are
+	enclosed := true
+	if col > 0 && theGraph[row][col-1].char == "." && !visited[row][col-1] {
+		enclosed = enclosed && tileIsEnclosed(graph, row, col-1, visited)
+	}
+	if col < numCols-1 && theGraph[row][col+1].char == "." && !visited[row][col+1] {
+		enclosed = enclosed && tileIsEnclosed(graph, row, col+1, visited)
+	}
+	if row > 0 && theGraph[row-1][col].char == "." && !visited[row-1][col] {
+		enclosed = enclosed && tileIsEnclosed(graph, row-1, col, visited)
+	}
+	if row < numRows-1 && theGraph[row+1][col].char == "." && !visited[row+1][col] {
+		enclosed = enclosed && tileIsEnclosed(graph, row+1, col, visited)
+	}
+
+	cache[row][col] = enclosed
+	return cache[row][col]
+}
+
 func main() {
 
 	// Figure out where the current file is
@@ -97,8 +166,8 @@ func main() {
 	exeDir := filepath.Dir(exePath)
 
 	// Load the input file from the same dir
-	// filePath := filepath.Join(exeDir, "example_input_2.txt")
-	filePath := filepath.Join(exeDir, "input.txt")
+	filePath := filepath.Join(exeDir, "example_input_2.txt")
+	// filePath := filepath.Join(exeDir, "input.txt")
 
 	// Read the file
 	content, err := os.ReadFile(filePath)
@@ -118,7 +187,6 @@ func main() {
 		startNode.north.steps += 1
 	}
 
-	fmt.Printf("startNode: %p, startNode.east: %p, startNode.east.west: %p\n", &startNode, startNode.east, startNode.east.west)
 	if startNode.east != nil && startNode.east.west == startNode {
 		toVisit = append(toVisit, startNode.east)
 		startNode.east.steps += 1
@@ -144,53 +212,50 @@ func main() {
 
 		currNode.visited = true
 
-		allEdgesVisited := true
 		if currNode.north != nil && !currNode.north.visited {
 			nextToVisit = append(nextToVisit, currNode.north)
 			currNode.north.steps = currNode.steps + 1
-			allEdgesVisited = false
 		}
 
 		if currNode.east != nil && !currNode.east.visited {
 			nextToVisit = append(nextToVisit, currNode.east)
 			currNode.east.steps = currNode.steps + 1
-			allEdgesVisited = false
 		}
 
 		if currNode.south != nil && !currNode.south.visited {
 			nextToVisit = append(nextToVisit, currNode.south)
 			currNode.south.steps = currNode.steps + 1
-			allEdgesVisited = false
 		}
 
 		if currNode.west != nil && !currNode.west.visited {
 			nextToVisit = append(nextToVisit, currNode.west)
 			currNode.west.steps = currNode.steps + 1
-			allEdgesVisited = false
-		}
-
-		if allEdgesVisited {
-			fmt.Println("steps=", currNode.steps)
 		}
 
 		toVisit = nextToVisit
 	}
-	// for _, row := range graph {
-	// 	fmt.Println()
-	// 	for _, node := range row {
-	// 		if node.char == "." {
-	// 			fmt.Print(".")
-	// 			continue
-	// 		}
-	// 		if node.char == "S" {
-	// 			fmt.Print("S")
-	// 			continue
-	// 		}
-	// 		if node.steps < 10 {
-	// 			fmt.Print(node.steps)
-	// 		} else {
-	// 			fmt.Print("*")
-	// 		}
-	// 	}
-	// }
+
+	numTilesEnclosed := 0
+	for rowIdx, row := range graph {
+		for colIdx, _ := range row {
+			visited := make(map[int]map[int]bool)
+			if tileIsEnclosed(&graph, rowIdx, colIdx, visited) {
+				numTilesEnclosed += 1
+				graph[rowIdx][colIdx].counted = true
+			}
+		}
+	}
+
+	fmt.Println(numTilesEnclosed)
+
+	for _, row := range graph {
+		fmt.Println()
+		for _, node := range row {
+			if node.counted {
+				fmt.Print("*")
+			} else {
+				fmt.Print(node.char)
+			}
+		}
+	}
 }
